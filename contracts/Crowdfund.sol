@@ -9,7 +9,6 @@ contract Crowdfund {
 
     struct Project {
         uint256 fundingGoal;
-        uint64 fundingDeadline; // seconds since epoch
         uint256 raised;
         address beneficiar;
     }
@@ -27,25 +26,16 @@ contract Crowdfund {
         _;
     }
 
-    function beforeDeadline(Project storage _project) internal view {
-        require(block.timestamp <= _project.fundingDeadline, "must be before deadline");
-    }
-
-    function afterDeadline(Project storage _project) internal view {
-        require(block.timestamp > _project.fundingDeadline, "must be after deadline");
-    }
-
-    function newProject(uint256 _fundingGoal, uint64 _fundingDeadline, address _beneficiar) public {
-        Project memory _project = Project({fundingGoal: _fundingGoal, fundingDeadline: _fundingDeadline, raised: 0, beneficiar: _beneficiar});
+    function newProject(uint256 _fundingGoal, address _beneficiar) public {
+        Project memory _project = Project({fundingGoal: _fundingGoal, raised: 0, beneficiar: _beneficiar});
         projects[currentProjectId] = _project;
-        emit NewProject(currentProjectId, _fundingGoal, _fundingDeadline, _beneficiar, msg.sender);
+        emit NewProject(currentProjectId, _fundingGoal, _beneficiar, msg.sender);
         ++currentProjectId;
     }
 
     // need to set allowance before calling this function
     function donate(uint64 _projectId, uint256 _amount) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
-        beforeDeadline(_project);
         unchecked { // overflowing token is not our responsibility
             _project.raised += _amount;
             userDonated[_projectId][msg.sender] += _amount;
@@ -57,7 +47,6 @@ contract Crowdfund {
 
     function withdraw(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
-        afterDeadline(_project);
         require(_project.raised >= _project.fundingGoal, "not reached funding goal");
         require(msg.sender == _project.beneficiar, "not you are the beneficiar");
         emit Withdraw(_projectId, msg.sender, _project.raised);
@@ -67,7 +56,6 @@ contract Crowdfund {
 
     function refund(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
-        afterDeadline(_project);
         require(_project.raised < _project.fundingGoal, "can't refund");
         uint256 _amount = userDonated[_projectId][msg.sender];
         userDonated[_projectId][msg.sender] = 0;
@@ -76,7 +64,7 @@ contract Crowdfund {
         token.safeTransfer(msg.sender, _amount);
     }
 
-    event NewProject(uint64 projectId, uint256 fundingGoal, uint64 fundingDeadline, address beneficiar, address creator);
+    event NewProject(uint64 projectId, uint256 fundingGoal, address beneficiar, address creator);
     event Donate(uint64 projectId, address donor, uint256 amount);
     event Withdraw(uint64 projectId, address beneficiar, uint256 amount);
     event Refund(uint64 projectId, address donor, uint256 amount);
