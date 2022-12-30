@@ -37,7 +37,9 @@ contract Crowdfund {
 
     function newProject(uint256 _fundingGoal, uint64 _fundingDeadline, address _beneficiar) public {
         Project memory _project = Project({fundingGoal: _fundingGoal, fundingDeadline: _fundingDeadline, raised: 0, beneficiar: _beneficiar});
-        projects[currentProjectId++] = _project;
+        projects[currentProjectId] = _project;
+        emit NewProject(currentProjectId, _fundingGoal, _fundingDeadline, _beneficiar, msg.sender);
+        ++currentProjectId;
     }
 
     // need to set allowance before calling this function
@@ -48,6 +50,7 @@ contract Crowdfund {
             _project.raised += _amount;
             userDonated[_projectId][msg.sender] += _amount;
         }
+        emit Donate(_projectId, msg.sender, _amount);
         // Goes last to avoid reentrancy vulnerability:
         token.safeTransfer(address(this), _amount);
     }
@@ -57,17 +60,24 @@ contract Crowdfund {
         afterDeadline(_project);
         require(_project.raised >= _project.fundingGoal, "not reached funding goal");
         require(msg.sender == _project.beneficiar, "not you are the beneficiar");
+        emit Withdraw(_projectId, msg.sender, _project.raised);
         // Goes last to avoid reentrancy vulnerability:
         token.safeTransfer(msg.sender, _project.raised);
     }
 
-    function refundPledged(uint64 _projectId) public saneProjectId(_projectId) {
+    function refund(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
         afterDeadline(_project);
         require(_project.raised < _project.fundingGoal, "can't refund");
         uint256 _amount = userDonated[_projectId][msg.sender];
         userDonated[_projectId][msg.sender] = 0;
+        emit Refund(_projectId, msg.sender, _amount);
         // Goes last to avoid reentrancy vulnerability:
         token.safeTransfer(msg.sender, _amount);
     }
+
+    event NewProject(uint64 projectId, uint256 fundingGoal, uint64 fundingDeadline, address beneficiar, address creator);
+    event Donate(uint64 projectId, address donor, uint256 amount);
+    event Withdraw(uint64 projectId, address beneficiar, uint256 amount);
+    event Refund(uint64 projectId, address donor, uint256 amount);
 }
