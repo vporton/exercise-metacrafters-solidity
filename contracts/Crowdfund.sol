@@ -11,6 +11,7 @@ contract Crowdfund {
         uint256 fundingGoal;
         uint256 raised;
         address beneficiar;
+        bool withdrawn;
     }
 
     // It would be better to use a separate token for each project, but that requires to change task formulation.
@@ -32,7 +33,7 @@ contract Crowdfund {
     }
 
     function newProject(uint256 _fundingGoal, address _beneficiar) public {
-        Project memory _project = Project({fundingGoal: _fundingGoal, raised: 0, beneficiar: _beneficiar});
+        Project memory _project = Project({fundingGoal: _fundingGoal, raised: 0, beneficiar: _beneficiar, withdrawn: false});
         projects[currentProjectId] = _project;
         emit NewProject(currentProjectId, _fundingGoal, _beneficiar, msg.sender);
         ++currentProjectId;
@@ -52,11 +53,12 @@ contract Crowdfund {
 
     function withdraw(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
-        require(_project.raised >= _project.fundingGoal, "not reached funding goal or already withdrawn");
+        require(_project.raised >= _project.fundingGoal, "not reached funding goal");
         require(msg.sender == _project.beneficiar, "not you are the beneficiar");
+        require(!_project.withdrawn, "already withdrawn");
         emit Withdraw(_projectId, msg.sender, _project.raised);
         uint256 _raised = _project.raised;
-        _project.raised = 0; // prevent repeated withdrawal
+        _project.withdrawn = true; // prevent repeated withdrawal
         // Goes last to avoid reentrancy vulnerability:
         token.safeTransfer(msg.sender, _raised);
     }
@@ -64,7 +66,11 @@ contract Crowdfund {
     function refund(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
         require(_project.raised < _project.fundingGoal, "can't refund");
+        require(!_project.withdrawn, "already withdrawn");
         uint256 _amount = userDonated[_projectId][msg.sender];
+        unchecked { // overflowing token is not our responsibility
+            _project.raised -= _amount;
+        }
         userDonated[_projectId][msg.sender] = 0; // prevent repeated refund
         emit Refund(_projectId, msg.sender, _amount);
         // Goes last to avoid reentrancy vulnerability:

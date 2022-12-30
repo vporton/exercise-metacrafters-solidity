@@ -81,7 +81,7 @@ describe("Crowdfund", function () {
       async function withdraw2() {
         await crowdfund.connect(beneficiar1).withdraw(projectId);
       }
-      await expect(withdraw2()).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'not reached funding goal or already withdrawn'");
+      await expect(withdraw2()).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'already withdrawn'");
     });
 
     it("refund by a donor", async function () {
@@ -108,6 +108,34 @@ describe("Crowdfund", function () {
       const withdrawTx2 = await crowdfund.connect(donor1).refund(projectId);
       await withdrawTx2.wait();
       expect(await token.balanceOf(donor1.address)).to.equal(donorRichness); // second refund withdraws zero
+    });
+
+    // Withdrawal after refund (and yet a user donated) is possible, not testing it.
+
+    it("impossible refund after withdrawal", async function () {
+      const { token, crowdfund, owner, beneficiar1, beneficiar2, donor1, donor2 } = await loadFixture(deployFixture);
+      const projectTx = await crowdfund.newProject(parseEther("20"), beneficiar1.address);
+      const projectTx2 = await crowdfund.newProject(parseEther("20"), beneficiar1.address);
+      const projectId = BN.from(0);
+      const projectId2 = BN.from(1);
+      const donorRichness = parseEther('10000');
+      const fundTx1 = await token.transfer(donor1.address, donorRichness);
+      const fundTx2 = await token.transfer(donor2.address, donorRichness);
+      const allowTx1 = await token.connect(donor1).approve(crowdfund.address, UINT256_MAX);
+      const allowTx2 = await token.connect(donor2).approve(crowdfund.address, UINT256_MAX);
+      await projectTx.wait(), await projectTx2.wait(), await fundTx1.wait(), await fundTx2.wait(), await allowTx1.wait(), await allowTx2.wait();
+      const donateTx1 = await crowdfund.connect(donor1).donate(projectId, parseEther('30'));
+      await donateTx1.wait();
+      const withdrawTx = await crowdfund.connect(beneficiar1).withdraw(projectId);
+      await withdrawTx.wait();
+      const donateTx3 = await crowdfund.connect(donor1).donate(projectId2, parseEther('200'));
+      await donateTx3.wait();
+
+      // impossible refund
+      async function refund() {
+        await crowdfund.connect(donor1).refund(projectId);
+      }
+      await expect(refund()).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'can't refund'");
     });
   });
 });
