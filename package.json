@@ -14,8 +14,10 @@
     "@nomiclabs/hardhat-ethers": "^2.2.1",
     "@types/mocha": "^10.0.1",
     "chai": "^4.3.7",
+    "ethereum-waffle": "^3.4.4",
     "ethers": "^5.7.2",
     "hardhat": "^2.12.5",
+    "remove": "^0.1.5",
     "ts-node": "^10.9.1"
   },
   "dependencies": {

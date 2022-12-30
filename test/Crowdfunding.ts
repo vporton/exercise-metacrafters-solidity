@@ -1,7 +1,13 @@
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
-import { expect } from "chai";
+import chai from "chai";
 import { ethers } from "hardhat";
+import { solidity } from "ethereum-waffle";
+
+const { BigNumber: BN } = ethers;
+const { expect } = chai;
+
+chai.use(solidity);
 
 describe("Crowdfund", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -9,22 +15,31 @@ describe("Crowdfund", function () {
   // and reset Hardhat Network to that snapshot in every test.
   async function deployFixture() {
     // Contracts are deployed using the first signer/account by default
-    const [owner, beneficiar1] = await ethers.getSigners();
+    const [owner, beneficiar1, beneficiar2] = await ethers.getSigners();
 
     const Token = await ethers.getContractFactory("Token");
     const token = await Token.deploy("Test", "TEST", '1000000');
     const Crowdfund = await ethers.getContractFactory("Crowdfund");
     const crowdfund = await Crowdfund.deploy(token.address); // FIXME: upgradeable (check that the contract matches requirements)
 
-    return { token, crowdfund, beneficiar1 };
+    return { token, crowdfund, owner, beneficiar1, beneficiar2 };
   }
 
   describe("Deployment", function () {
-    it("Should return project info", async function () {
-      const { token, crowdfund, beneficiar1 } = await loadFixture(deployFixture);
-      const tx = await crowdfund.newProject(ethers.utils.parseEther("1000"), beneficiar1.address);
-
-      // expect(await lock.unlockTime()).to.equal(unlockTime);
+    it("creating projects", async function () {
+      const { token, crowdfund, owner, beneficiar1, beneficiar2 } = await loadFixture(deployFixture);
+      const tx1 = await crowdfund.newProject(ethers.utils.parseEther("1000"), beneficiar1.address);
+      const tx2 = await crowdfund.newProject(ethers.utils.parseEther("2000"), beneficiar2.address);
+      const [res1, res2] = [await tx1.wait(), await tx2.wait()];
+      const event1 = res1.events[0];
+      const event2 = res2.events[0];
+      expect(event1.event).to.equal('NewProject');
+      expect(event2.event).to.equal('NewProject');
+      expect(event1.args.projectId).to.equal(ethers.BigNumber.from('0'));
+      expect(event2.args.projectId).to.equal(ethers.BigNumber.from('1'));
+      expect(event1.args.fundingGoal).to.equal(ethers.utils.parseEther("1000"));
+      expect(event1.args.beneficiar).to.equal(beneficiar1.address);
+      expect(event1.args.creator).to.equal(owner.address);
     });
 
   //   it("Should set the right owner", async function () {
