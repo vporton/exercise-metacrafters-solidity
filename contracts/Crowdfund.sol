@@ -55,15 +55,17 @@ contract Crowdfund {
         require(_project.raised >= _project.fundingGoal, "not reached funding goal");
         require(msg.sender == _project.beneficiar, "not you are the beneficiar");
         emit Withdraw(_projectId, msg.sender, _project.raised);
+        uint256 _raised = _project.raised;
+        _project.raised = 0; // prevent repeated withdrawal
         // Goes last to avoid reentrancy vulnerability:
-        token.safeTransfer(msg.sender, _project.raised); // FIXME
+        token.safeTransfer(msg.sender, _raised);
     }
 
     function refund(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
         require(_project.raised < _project.fundingGoal, "can't refund");
         uint256 _amount = userDonated[_projectId][msg.sender];
-        userDonated[_projectId][msg.sender] = 0;
+        userDonated[_projectId][msg.sender] = 0; // prevent repeated refund
         emit Refund(_projectId, msg.sender, _amount);
         // Goes last to avoid reentrancy vulnerability:
         token.safeTransfer(msg.sender, _amount);

@@ -83,6 +83,9 @@ describe("Crowdfund", function () {
       expect(await token.balanceOf(donor1.address)).to.equal(donorRichness); // richness returned to the previous state
     });
 
+    // FIXME: Check no withdrawal and no refund two times.
     // FIXME: Check failed transactions.
+    // FIXME: Test of withdrawal not by beneficiar.
+    // FIXME: Test multiple donations by the same donor.
   });
 });
