@@ -47,7 +47,7 @@ contract Crowdfund {
         }
         emit Donate(_projectId, msg.sender, _amount);
         // Goes last to avoid reentrancy vulnerability:
-        token.safeTransfer(address(this), _amount);
+        token.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     function withdraw(uint64 _projectId) public saneProjectId(_projectId) {
