@@ -11,3 +11,8 @@ To run test,
 ```sh
 npm test
 ```
+
+To deploy,
+```sh
+npx hardhat deploy --network <NETWORK>
+```
