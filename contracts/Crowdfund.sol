@@ -52,7 +52,7 @@ contract Crowdfund {
 
     function withdraw(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
-        require(_project.raised >= _project.fundingGoal, "not reached funding goal");
+        require(_project.raised >= _project.fundingGoal, "not reached funding goal or already withdrawn");
         require(msg.sender == _project.beneficiar, "not you are the beneficiar");
         emit Withdraw(_projectId, msg.sender, _project.raised);
         uint256 _raised = _project.raised;
