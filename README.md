@@ -16,3 +16,4 @@ To deploy,
 ```sh
 npx hardhat deploy --network <NETWORK>
 ```
+This also deployes the token funds at the first HardHat account.
