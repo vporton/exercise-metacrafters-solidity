@@ -12,24 +12,34 @@ contract Crowdfund is Initializable {
         bool withdrawn;
     }
 
-    // It would be better to use a separate token for each project, but that requires to change task formulation.
+    /// The token used for crowdfunding.
+    ///
+    /// It would be better to use a separate token for each project, but that requires to change task formulation.
     Token public token;
 
     uint64 internal currentProjectId; // initializes to 0 (not explicit initialization to make contract upgradeable)
 
-    mapping (uint64 => Project) public projects; // projectId => Project
+    /// projectId => Project
+    mapping (uint64 => Project) public projects; // 
 
-    mapping (uint64 => mapping (address => uint256)) public userDonated; // projectId => (user => amount)
+    /// projectId => (user => donated amount)
+    mapping (uint64 => mapping (address => uint256)) public userDonated;
 
+    /// The project with this `_projectId` was created.
     modifier saneProjectId(uint64 _projectId) {
         require(_projectId < currentProjectId, "no such project");
         _;
     }
 
+    /// Run once on contract creation.
     function initialize(Token _token) public initializer {
         token = _token;
     }
 
+    /// Generates new crowdfunding project, returns its ID in `NewProject` event.
+    ///
+    /// `_fundingGoal` - funding goal
+    /// `_beneficiar` - who can receive the funds after funding goal is reached (can be different than invoker)
     function newProject(uint256 _fundingGoal, address _beneficiar) public {
         Project memory _project = Project({fundingGoal: _fundingGoal, raised: 0, beneficiar: _beneficiar, withdrawn: false});
         projects[currentProjectId] = _project;
@@ -37,7 +47,9 @@ contract Crowdfund is Initializable {
         ++currentProjectId;
     }
 
-    // need to set allowance before calling this function
+    /// Donate to the project `_projectId` amount `_amount`.
+    ///
+    /// Need to set allowance to the contract before calling this function.
     function donate(uint64 _projectId, uint256 _amount) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
         unchecked { // overflowing token is not our responsibility
@@ -49,6 +61,7 @@ contract Crowdfund is Initializable {
         token.transferFrom(msg.sender, address(this), _amount);
     }
 
+    /// Withdraw all funds from `_projectId` to its beneficiar.
     function withdraw(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
         require(_project.raised >= _project.fundingGoal, "not reached funding goal");
@@ -61,6 +74,7 @@ contract Crowdfund is Initializable {
         token.transfer(msg.sender, _raised);
     }
 
+    /// Refund the caller's donations for `_projectId`.
     function refund(uint64 _projectId) public saneProjectId(_projectId) {
         Project storage _project = projects[_projectId];
         require(_project.raised < _project.fundingGoal, "can't refund");
