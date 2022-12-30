@@ -2,11 +2,9 @@
 pragma solidity ^0.8.9;
 
 import { Token } from './Token.sol';
-import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
-contract Crowdfund {
-    using SafeERC20 for Token;
-
+contract Crowdfund is Initializable {
     struct Project {
         uint256 fundingGoal;
         uint256 raised;
@@ -17,7 +15,7 @@ contract Crowdfund {
     // It would be better to use a separate token for each project, but that requires to change task formulation.
     Token public token;
 
-    uint64 internal currentProjectId = 0;
+    uint64 internal currentProjectId; // initializes to 0 (not explicit initialization to make contract upgradeable)
 
     mapping (uint64 => Project) public projects; // projectId => Project
 
@@ -28,7 +26,7 @@ contract Crowdfund {
         _;
     }
 
-    constructor(Token _token) {
+    function initialize(Token _token) public initializer {
         token = _token;
     }
 
@@ -48,7 +46,7 @@ contract Crowdfund {
         }
         emit Donate(_projectId, msg.sender, _amount);
         // Goes last to avoid reentrancy vulnerability:
-        token.safeTransferFrom(msg.sender, address(this), _amount);
+        token.transferFrom(msg.sender, address(this), _amount);
     }
 
     function withdraw(uint64 _projectId) public saneProjectId(_projectId) {
@@ -60,7 +58,7 @@ contract Crowdfund {
         uint256 _raised = _project.raised;
         _project.withdrawn = true; // prevent repeated withdrawal
         // Goes last to avoid reentrancy vulnerability:
-        token.safeTransfer(msg.sender, _raised);
+        token.transfer(msg.sender, _raised);
     }
 
     function refund(uint64 _projectId) public saneProjectId(_projectId) {
@@ -74,7 +72,7 @@ contract Crowdfund {
         userDonated[_projectId][msg.sender] = 0; // prevent repeated refund
         emit Refund(_projectId, msg.sender, _amount);
         // Goes last to avoid reentrancy vulnerability:
-        token.safeTransfer(msg.sender, _amount);
+        token.transfer(msg.sender, _amount);
     }
 
     event NewProject(uint64 projectId, uint256 fundingGoal, address beneficiar, address creator);

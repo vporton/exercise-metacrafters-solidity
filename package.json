@@ -13,6 +13,8 @@
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.7",
     "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "@openzeppelin/contracts-upgradeable": "^4.8.0",
+    "@openzeppelin/hardhat-upgrades": "^1.22.0",
     "@types/mocha": "^10.0.1",
     "chai": "^4.3.7",
     "ethereum-waffle": "^3.4.4",

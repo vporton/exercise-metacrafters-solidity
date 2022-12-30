@@ -1,7 +1,7 @@
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import chai from "chai";
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { solidity } from "ethereum-waffle";
 
 const { BigNumber: BN } = ethers;
@@ -23,7 +23,8 @@ describe("Crowdfund", function () {
     const Token = await ethers.getContractFactory("Token");
     const token = await Token.deploy("Test", "TEST", parseEther('1000000'));
     const Crowdfund = await ethers.getContractFactory("Crowdfund");
-    const crowdfund = await Crowdfund.deploy(token.address); // FIXME: upgradeable (check that the contract matches requirements)
+    // const crowdfund = await Crowdfund.deploy(token.address); // FIXME: upgradeable (check that the contract matches requirements)
+    const crowdfund = await upgrades.deployProxy(Crowdfund, [token.address]);
 
     return { token, crowdfund, owner, beneficiar1, beneficiar2, donor1, donor2 };
   }
