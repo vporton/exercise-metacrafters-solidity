@@ -20,7 +20,7 @@ contract Crowdfund is Initializable {
     uint64 internal currentProjectId; // initializes to 0 (not explicit initialization to make contract upgradeable)
 
     /// projectId => Project
-    mapping (uint64 => Project) public projects; // 
+    mapping (uint64 => Project) public projects;
 
     /// projectId => (user => donated amount)
     mapping (uint64 => mapping (address => uint256)) public userDonated;
