@@ -56,7 +56,7 @@ contract Crowdfund {
         require(msg.sender == _project.beneficiar, "not you are the beneficiar");
         emit Withdraw(_projectId, msg.sender, _project.raised);
         // Goes last to avoid reentrancy vulnerability:
-        token.safeTransfer(msg.sender, _project.raised);
+        token.safeTransfer(msg.sender, _project.raised); // FIXME
     }
 
     function refund(uint64 _projectId) public saneProjectId(_projectId) {

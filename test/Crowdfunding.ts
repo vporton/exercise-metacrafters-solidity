@@ -56,12 +56,12 @@ describe("Crowdfund", function () {
       const allowTx2 = await token.connect(donor2).approve(crowdfund.address, UINT256_MAX);
       await projectTx.wait(), await fundTx1.wait(), await fundTx2.wait(), await allowTx1.wait(), await allowTx2.wait();
       const donateTx1 = await crowdfund.connect(donor1).donate(projectId, parseEther('750'));
-      const donateTx2 = await crowdfund.connect(donor2).donate(projectId, parseEther('750'));
+      const donateTx2 = await crowdfund.connect(donor2).donate(projectId, parseEther('800'));
       await donateTx1.wait(), await donateTx2.wait();
       expect(await token.balanceOf(donor1.address)).to.equal(donorRichness.sub(BN.from(parseEther('750'))));
       const withdrawTx = await crowdfund.connect(beneficiar1).withdraw(projectId);
       await withdrawTx.wait();
-      expect(await token.balanceOf(donor1.address)).to.equal(donorRichness); // richness returned to the previous state
+      expect(await token.balanceOf(beneficiar1.address)).to.equal(parseEther('1550')); // richness returned to the previous state
     })
   });
 });
