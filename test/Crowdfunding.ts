@@ -61,7 +61,28 @@ describe("Crowdfund", function () {
       expect(await token.balanceOf(donor1.address)).to.equal(donorRichness.sub(BN.from(parseEther('750'))));
       const withdrawTx = await crowdfund.connect(beneficiar1).withdraw(projectId);
       await withdrawTx.wait();
-      expect(await token.balanceOf(beneficiar1.address)).to.equal(parseEther('1550')); // richness returned to the previous state
-    })
+      expect(await token.balanceOf(beneficiar1.address)).to.equal(parseEther('1550'));
+    });
+
+    it("refund by a donor", async function () {
+      const { token, crowdfund, owner, beneficiar1, beneficiar2, donor1, donor2 } = await loadFixture(deployFixture);
+      const projectTx = await crowdfund.newProject(parseEther("1000"), beneficiar1.address);
+      const projectId = BN.from(0);
+      const donorRichness = parseEther('10000');
+      const fundTx1 = await token.transfer(donor1.address, donorRichness);
+      const fundTx2 = await token.transfer(donor2.address, donorRichness);
+      const allowTx1 = await token.connect(donor1).approve(crowdfund.address, UINT256_MAX);
+      const allowTx2 = await token.connect(donor2).approve(crowdfund.address, UINT256_MAX);
+      await projectTx.wait(), await fundTx1.wait(), await fundTx2.wait(), await allowTx1.wait(), await allowTx2.wait();
+      const donateTx1 = await crowdfund.connect(donor1).donate(projectId, parseEther('100'));
+      const donateTx2 = await crowdfund.connect(donor2).donate(projectId, parseEther('200'));
+      await donateTx1.wait(), await donateTx2.wait();
+      expect(await token.balanceOf(donor1.address)).to.equal(donorRichness.sub(BN.from(parseEther('100'))));
+      const withdrawTx = await crowdfund.connect(donor1).refund(projectId);
+      await withdrawTx.wait();
+      expect(await token.balanceOf(donor1.address)).to.equal(donorRichness); // richness returned to the previous state
+    });
+
+    // FIXME: Check failed transactions.
   });
 });
