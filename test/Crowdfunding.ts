@@ -103,6 +103,8 @@ describe("Crowdfund", function () {
       const withdrawTx = await crowdfund.connect(donor1).refund(projectId);
       await withdrawTx.wait();
       expect(await token.balanceOf(donor1.address)).to.equal(donorRichness); // richness returned to the previous state
+      expect((await crowdfund.projects(projectId)).raised).to.equal(parseEther('200')); // only donor2 donations remained.
+      expect((await crowdfund.userDonated(projectId, donor1.address))).to.equal(0); // donor1 refunded
 
       // Second refund refunds zero, even if other donor donated something:
       const withdrawTx2 = await crowdfund.connect(donor1).refund(projectId);
@@ -139,3 +141,4 @@ describe("Crowdfund", function () {
     });
   });
 });
+
