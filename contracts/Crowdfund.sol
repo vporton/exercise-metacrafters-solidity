@@ -13,6 +13,7 @@ contract Crowdfund {
         address beneficiar;
     }
 
+    // It would be better to use a separate token for each project, but that requires to change task formulation.
     Token public token;
 
     uint64 internal currentProjectId = 0;
@@ -24,6 +25,10 @@ contract Crowdfund {
     modifier saneProjectId(uint64 _projectId) {
         require(_projectId < currentProjectId, "no such project");
         _;
+    }
+
+    constructor(Token _token) {
+        token = _token;
     }
 
     function newProject(uint256 _fundingGoal, address _beneficiar) public {
