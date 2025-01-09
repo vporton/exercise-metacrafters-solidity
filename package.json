@@ -25,6 +25,6 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.0"
+    "@openzeppelin/contracts": "^4.9.6"
   }
 }
